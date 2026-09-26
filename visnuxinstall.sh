@@ -9,6 +9,7 @@ INIT=""
 DE=""
 WIFI_SSID=""
 WIFI_PASS=""
+BOOTMODE_CHOICE=""
 LOGFILE="/tmp/visnux_install.log"
 
 check_mount() {
@@ -159,14 +160,15 @@ if ! network_preflight_check; then
 fi
 
 while true; do
-    MENU=$(dialog --title "Installation Menu" --menu "Choose an option" 17 55 7 \
+    MENU=$(dialog --title "Installation Menu" --menu "Choose an option" 19 60 8 \
         1 "User Account" \
         2 "Hostname" \
         3 "Root Password" \
         4 "Init Selection" \
         5 "DE selection" \
         6 "Wi-Fi Setup (optional)" \
-        7 "Install" 3>&1 1>&2 2>&3 3>&-)
+        7 "Boot Mode (UEFI/BIOS)" \
+        8 "Install" 3>&1 1>&2 2>&3 3>&-)
     
     STATUS=$?
     clear
@@ -265,8 +267,28 @@ while true; do
             clear
         fi
     fi
-   
+
     if [ "$MENU" == "7" ]; then
+        CHOICE=$(dialog --title "Boot Mode" --menu "How should the installer decide between UEFI and BIOS/Legacy?\n\nOnly override auto-detect if you know it's wrong for your setup (e.g. you booted the installer media in a different mode than you want to install in)." 15 70 3 \
+            1 "Auto-detect (recommended)" \
+            2 "Force UEFI" \
+            3 "Force BIOS / Legacy" 3>&1 1>&2 2>&3 3>&-); clear
+
+        case "$CHOICE" in
+            1) BOOTMODE_CHOICE="" ;;
+            2) BOOTMODE_CHOICE="uefi" ;;
+            3) BOOTMODE_CHOICE="bios" ;;
+        esac
+
+        if [ -n "$CHOICE" ]; then
+            LABEL="Auto-detect"
+            [ "$BOOTMODE_CHOICE" == "uefi" ] && LABEL="Force UEFI"
+            [ "$BOOTMODE_CHOICE" == "bios" ] && LABEL="Force BIOS/Legacy"
+            dialog --title "Boot Mode Set" --msgbox "Boot mode set to: $LABEL" 0 0; clear
+        fi
+    fi
+
+    if [ "$MENU" == "8" ]; then
 
         MISSING=""
         [ -z "$USER_" ] && MISSING="${MISSING}\n - User Account"
@@ -285,13 +307,27 @@ while true; do
             continue
         fi
 
-        # Detect firmware boot mode and where the ESP is actually mounted, up front,
-        # so we can catch a missing/misplaced EFI partition BEFORE the point of no return.
-        if [ -d /sys/firmware/efi/efivars ]; then
-            BOOT_MODE="uefi"
-        else
-            BOOT_MODE="bios"
+        # Detect firmware boot mode, honoring a manual override from the "Boot Mode" menu.
+        # EFIVARS_PRESENT reflects whether THIS live session can actually write NVRAM boot
+        # entries (efivarfs mounted with content) - that's independent from which mode we
+        # ultimately install for, which matters when someone forces UEFI from a BIOS/CSM-booted
+        # live session.
+        EFIVARS_PRESENT=false
+        if [ -d /sys/firmware/efi/efivars ] && [ -n "$(ls -A /sys/firmware/efi/efivars 2>/dev/null)" ]; then
+            EFIVARS_PRESENT=true
         fi
+
+        case "$BOOTMODE_CHOICE" in
+            uefi) BOOT_MODE="uefi" ;;
+            bios) BOOT_MODE="bios" ;;
+            *)
+                if [ "$EFIVARS_PRESENT" == "true" ]; then
+                    BOOT_MODE="uefi"
+                else
+                    BOOT_MODE="bios"
+                fi
+                ;;
+        esac
 
         EFI_DIR=""
         if mountpoint -q /mnt/boot/efi 2>/dev/null; then
@@ -301,8 +337,36 @@ while true; do
         fi
 
         if [ "$BOOT_MODE" == "uefi" ] && [ -z "$EFI_DIR" ]; then
-            dialog --title "EFI Partition Not Found" --msgbox "You're on a UEFI system, but no EFI System Partition is mounted at /mnt/boot or /mnt/boot/efi.\n\nMount your FAT32 ESP at one of those paths (e.g. mount /dev/sda1 /mnt/boot/efi) and try again." 0 0; clear
+            dialog --title "EFI Partition Not Found" --msgbox "You're installing for UEFI, but no EFI System Partition is mounted at /mnt/boot or /mnt/boot/efi.\n\nMount your FAT32 ESP at one of those paths (e.g. mount /dev/sda1 /mnt/boot/efi) and try again." 0 0; clear
             continue
+        fi
+
+        if [ "$BOOT_MODE" == "uefi" ] && [ -n "$EFI_DIR" ]; then
+            ESP_FSTYPE=$(findmnt -no FSTYPE "/mnt${EFI_DIR}" 2>/dev/null)
+            if [ "$ESP_FSTYPE" != "vfat" ]; then
+                dialog --title "EFI Partition Warning" --yesno "The partition mounted at $EFI_DIR doesn't look like FAT32/vfat (detected: ${ESP_FSTYPE:-unknown}).\n\nA UEFI ESP must be formatted FAT32 or grub-install will fail. This is also required so an existing Windows/other-OS bootloader on the same ESP stays intact for dual-booting.\n\nContinue anyway?" 0 0
+                if [ $? -ne 0 ]; then
+                    clear
+                    continue
+                fi
+                clear
+            fi
+        fi
+
+        # UEFI_NVRAM_OK controls whether we try to register a proper firmware boot entry
+        # (needs a mounted efivarfs) versus only writing the fallback-path bootloader.
+        UEFI_NVRAM_OK=false
+        if [ "$BOOT_MODE" == "uefi" ] && [ "$EFIVARS_PRESENT" == "true" ]; then
+            UEFI_NVRAM_OK=true
+        fi
+
+        if [ "$BOOT_MODE" == "uefi" ] && [ "$EFIVARS_PRESENT" != "true" ]; then
+            dialog --title "Warning: No EFI Variables" --yesno "You're installing for UEFI, but this live session doesn't have EFI variables available (it looks like it was booted in BIOS/CSM mode).\n\nGrub can still be installed (a fallback bootloader will be written to $EFI_DIR/EFI/BOOT/BOOTX64.EFI), but no dedicated 'Visnux' entry can be registered in your firmware's boot menu - most firmwares will still boot it as the fallback, but not all.\n\nFor a proper boot entry, reboot the install media in UEFI mode instead.\n\nContinue anyway?" 0 0
+            if [ $? -ne 0 ]; then
+                clear
+                continue
+            fi
+            clear
         fi
 
         dialog --title "Warning!" --yesno "If you click confirm, Visnux Linux will install on your disk/partition at /mnt. THIS ACTION CANNOT BE REVERSED!\n\nDo you wish to continue?" 0 0
@@ -389,10 +453,32 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 if [ "$BOOT_MODE" = "uefi" ]; then
     pacman -S --noconfirm grub efibootmgr os-prober
-    grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
-    if [ \$? -ne 0 ]; then
-        echo "FATAL: UEFI grub-install failed. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
-        exit 1
+    if [ "$UEFI_NVRAM_OK" = "true" ]; then
+        grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux
+        if [ \$? -ne 0 ]; then
+            echo "WARNING: grub-install with NVRAM registration failed, retrying with --removable (no firmware boot entry will be created)." >&2
+            grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
+            if [ \$? -ne 0 ]; then
+                echo "FATAL: UEFI grub-install failed even with --removable. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
+                exit 1
+            fi
+        fi
+    else
+        grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
+        if [ \$? -ne 0 ]; then
+            echo "FATAL: UEFI grub-install failed. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
+            exit 1
+        fi
+    fi
+
+    # Also drop a copy at the default fallback path (EFI/BOOT/BOOTX64.EFI). Firmware
+    # NVRAM entries are frequently wiped by Windows updates or BIOS resets on dual-boot
+    # machines, and most firmware falls back to this path when no NVRAM entry matches -
+    # this keeps the system bootable even after that happens, without touching Windows'
+    # own bootmgfw.efi (which lives at EFI/Microsoft/Boot/, a different path).
+    mkdir -p "$EFI_DIR/EFI/BOOT"
+    if [ -f "$EFI_DIR/EFI/Visnux/grubx64.efi" ]; then
+        cp -f "$EFI_DIR/EFI/Visnux/grubx64.efi" "$EFI_DIR/EFI/BOOT/BOOTX64.EFI" || true
     fi
 else
     if [ -z "$GRUB_DISK" ]; then
@@ -514,10 +600,27 @@ mkinitcpio -P
 
 if [ "$BOOT_MODE" = "uefi" ]; then
     pacman -S --noconfirm grub efibootmgr os-prober
-    grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
-    if [ \$? -ne 0 ]; then
-        echo "FATAL: UEFI grub-install failed. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
-        exit 1
+    if [ "$UEFI_NVRAM_OK" = "true" ]; then
+        grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux
+        if [ \$? -ne 0 ]; then
+            echo "WARNING: grub-install with NVRAM registration failed, retrying with --removable (no firmware boot entry will be created)." >&2
+            grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
+            if [ \$? -ne 0 ]; then
+                echo "FATAL: UEFI grub-install failed even with --removable. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
+                exit 1
+            fi
+        fi
+    else
+        grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
+        if [ \$? -ne 0 ]; then
+            echo "FATAL: UEFI grub-install failed. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
+            exit 1
+        fi
+    fi
+
+    mkdir -p "$EFI_DIR/EFI/BOOT"
+    if [ -f "$EFI_DIR/EFI/Visnux/grubx64.efi" ]; then
+        cp -f "$EFI_DIR/EFI/Visnux/grubx64.efi" "$EFI_DIR/EFI/BOOT/BOOTX64.EFI" || true
     fi
 else
     if [ -z "$GRUB_DISK" ]; then
@@ -677,10 +780,27 @@ mkinitcpio -P
 
 if [ "$BOOT_MODE" = "uefi" ]; then
     pacman -S --noconfirm grub efibootmgr os-prober
-    grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
-    if [ \$? -ne 0 ]; then
-        echo "FATAL: UEFI grub-install failed. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
-        exit 1
+    if [ "$UEFI_NVRAM_OK" = "true" ]; then
+        grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux
+        if [ \$? -ne 0 ]; then
+            echo "WARNING: grub-install with NVRAM registration failed, retrying with --removable (no firmware boot entry will be created)." >&2
+            grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
+            if [ \$? -ne 0 ]; then
+                echo "FATAL: UEFI grub-install failed even with --removable. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
+                exit 1
+            fi
+        fi
+    else
+        grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux --removable
+        if [ \$? -ne 0 ]; then
+            echo "FATAL: UEFI grub-install failed. Check that $EFI_DIR is your mounted ESP (vfat filesystem, esp/boot partition flag set)." >&2
+            exit 1
+        fi
+    fi
+
+    mkdir -p "$EFI_DIR/EFI/BOOT"
+    if [ -f "$EFI_DIR/EFI/Visnux/grubx64.efi" ]; then
+        cp -f "$EFI_DIR/EFI/Visnux/grubx64.efi" "$EFI_DIR/EFI/BOOT/BOOTX64.EFI" || true
     fi
 else
     if [ -z "$GRUB_DISK" ]; then
