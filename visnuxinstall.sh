@@ -393,7 +393,7 @@ while true; do
             if [ "$INIT" == "1" ]; then
                 sed -i 's/^#*ParallelDownloads = .*/ParallelDownloads = 12/' /etc/pacman.conf
                 
-                pacstrap -K /mnt base base-devel linux linux-firmware sof-firmware grub efibootmgr os-prober sudo >> "$LOGFILE" 2>&1 || INIT_OK=false
+                pacstrap -K /mnt base base-devel linux linux-firmware sof-firmware grub efibootmgr os-prober sudo --overwrite="*" >> "$LOGFILE" 2>&1 || INIT_OK=false
                 
                 if [ "$INIT_OK" == "true" ]; then
                     genfstab -U /mnt > /mnt/etc/fstab
@@ -443,7 +443,7 @@ echo "$USER_:$PASSWORD" | chpasswd
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 if [ "$BOOT_MODE" = "uefi" ]; then
-    pacman -S --noconfirm grub efibootmgr os-prober
+    pacman -S --noconfirm --overwrite="*" grub efibootmgr os-prober
     if [ "$UEFI_NVRAM_OK" = "true" ]; then
         grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux
         if [ \$? -ne 0 ]; then
@@ -471,7 +471,7 @@ else
         echo "FATAL: could not determine the target disk for BIOS grub-install (findmnt/lsblk gave nothing usable - no /dev/sda assumption made). See log for details." >&2
         exit 1
     fi
-    pacman -S --noconfirm grub os-prober
+    pacman -S --noconfirm --overwrite="*" grub os-prober
     grub-install --recheck "$GRUB_DISK"
     if [ \$? -ne 0 ]; then
         echo "FATAL: BIOS grub-install to $GRUB_DISK failed." >&2
@@ -484,9 +484,9 @@ sed -i 's/^#*GRUB_DISABLE_OS_PROBER=.*/GRUB_DISABLE_OS_PROBER=false/' /etc/defau
 grub-mkconfig -o /boot/grub/grub.cfg
 
 if [ "$DE" == "1" ]; then
-    pacman -S plasma konsole dolphin wl-clipboard kitty fastfetch sddm networkmanager nano sudo power-profiles-daemon --noconfirm
+    pacman -S plasma konsole dolphin wl-clipboard kitty fastfetch sddm networkmanager nano sudo power-profiles-daemon --overwrite="*" --noconfirm
 elif [ "$DE" == "2" ]; then
-    pacman -S xorg-server xfce4 xfce4-whiskermenu-plugin xclip maim xfce4-pulseaudio-plugin kitty fastfetch sddm networkmanager nano sudo power-profiles-daemon --noconfirm
+    pacman -S xorg-server xfce4 xfce4-whiskermenu-plugin xclip maim xfce4-pulseaudio-plugin kitty fastfetch sddm networkmanager nano sudo power-profiles-daemon --overwrite="*" --noconfirm
 fi
 
 systemctl enable NetworkManager
@@ -533,7 +533,7 @@ Server = https://us-mirror.artixlinux.org/\$repo/os/\$arch
 Server = https://mirror.clarkson.edu/artix-linux/repos/\$repo/os/\$arch
 EOF
 
-                pacstrap -C "$ARTIX_CONF" /mnt base base-devel openrc elogind-openrc linux linux-firmware sof-firmware grub efibootmgr os-prober artix-keyring archlinux-keyring artix-mirrorlist sudo git >> "$LOGFILE" 2>&1 || INIT_OK=false
+                pacstrap -C "$ARTIX_CONF" /mnt base base-devel openrc elogind-openrc linux linux-firmware sof-firmware grub efibootmgr os-prober artix-keyring archlinux-keyring artix-mirrorlist sudo git --overwrite="*" >> "$LOGFILE" 2>&1 || INIT_OK=false
 
                 if [ "$INIT_OK" == "true" ]; then
                     cp "$ARTIX_CONF" /mnt/etc/pacman.conf
@@ -585,7 +585,7 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 mkinitcpio -P
 
 if [ "$BOOT_MODE" = "uefi" ]; then
-    pacman -S --noconfirm grub efibootmgr os-prober
+    pacman -S --noconfirm --overwrite="*" grub efibootmgr os-prober
     if [ "$UEFI_NVRAM_OK" = "true" ]; then
         grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux
         if [ \$? -ne 0 ]; then
@@ -613,7 +613,7 @@ else
         echo "FATAL: could not determine the target disk for BIOS grub-install (findmnt/lsblk gave nothing usable - no /dev/sda assumption made). See log for details." >&2
         exit 1
     fi
-    pacman -S --noconfirm grub os-prober
+    pacman -S --noconfirm --overwrite="*" grub os-prober
     grub-install --recheck "$GRUB_DISK"
     if [ \$? -ne 0 ]; then
         echo "FATAL: BIOS grub-install to $GRUB_DISK failed." >&2
@@ -643,7 +643,7 @@ pacman -S \
     networkmanager networkmanager-openrc \
     dbus dbus-openrc \
     nano sudo \
-    --noconfirm
+    --overwrite="*" --noconfirm
 EOF
                     [ $? -ne 0 ] && INIT_OK=false
 
@@ -709,7 +709,7 @@ Server = https://us-mirror.artixlinux.org/\$repo/os/\$arch
 Server = https://mirror.clarkson.edu/artix-linux/repos/\$repo/os/\$arch
 EOF
 
-                pacstrap -C "$ARTIX_CONF" /mnt base base-devel runit runit-rc elogind-runit linux linux-firmware sof-firmware grub efibootmgr os-prober artix-keyring archlinux-keyring artix-mirrorlist sudo git >> "$LOGFILE" 2>&1 || INIT_OK=false
+                pacstrap -C "$ARTIX_CONF" /mnt base base-devel runit runit-rc elogind-runit linux linux-firmware sof-firmware grub efibootmgr os-prober artix-keyring archlinux-keyring artix-mirrorlist sudo git --overwrite="*" >> "$LOGFILE" 2>&1 || INIT_OK=false
 
                 if [ "$INIT_OK" == "true" ]; then
                     cp "$ARTIX_CONF" /mnt/etc/pacman.conf
@@ -765,7 +765,7 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 mkinitcpio -P
 
 if [ "$BOOT_MODE" = "uefi" ]; then
-    pacman -S --noconfirm grub efibootmgr os-prober
+    pacman -S --noconfirm --overwrite="*" grub efibootmgr os-prober
     if [ "$UEFI_NVRAM_OK" = "true" ]; then
         grub-install --target=x86_64-efi --efi-directory="$EFI_DIR" --bootloader-id=Visnux
         if [ \$? -ne 0 ]; then
@@ -793,7 +793,7 @@ else
         echo "FATAL: could not determine the target disk for BIOS grub-install (findmnt/lsblk gave nothing usable - no /dev/sda assumption made). See log for details." >&2
         exit 1
     fi
-    pacman -S --noconfirm grub os-prober
+    pacman -S --noconfirm --overwrite="*" grub os-prober
     grub-install --recheck "$GRUB_DISK"
     if [ \$? -ne 0 ]; then
         echo "FATAL: BIOS grub-install to $GRUB_DISK failed." >&2
@@ -822,7 +822,7 @@ pacman -S \
     networkmanager networkmanager-runit \
     dbus dbus-runit \
     nano sudo \
-    --noconfirm
+    --overwrite="*" --noconfirm
 EOF
                     [ $? -ne 0 ] && INIT_OK=false
 
