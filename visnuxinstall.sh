@@ -160,14 +160,14 @@ if ! network_preflight_check; then
 fi
 
 while true; do
-    MENU=$(dialog --title "Installation Menu" --menu "Choose an option" 19 60 8 \
+    MENU=$(dialog --title "Installation Menu" --menu "Choose an option" 20 55 8 \
         1 "User Account" \
         2 "Hostname" \
         3 "Root Password" \
         4 "Init Selection" \
         5 "DE selection" \
         6 "Wi-Fi Setup (optional)" \
-        7 "Boot Mode (UEFI/BIOS)" \
+        7 "Boot Mode" \
         8 "Install" 3>&1 1>&2 2>&3 3>&-)
     
     STATUS=$?
@@ -191,7 +191,7 @@ while true; do
                 dialog --title "Password Set!" --msgbox "Password has been set!" 0 0; clear
                 break
             else
-                dialog --title "Error" --msgbox "Passwords do not match or were left empty. Try again." 0 0; clear
+                dialog --title "Error" --msgbox "Passwords not match or were left empty. Try again." 0 0; clear
             fi
         done
     fi
@@ -213,13 +213,13 @@ while true; do
                 dialog --title "Root Password Set!" --msgbox "Your root password has been set!" 0 0; clear
                 break
             else
-                dialog --title "Error" --msgbox "Passwords do not match or were left empty. Try again." 0 0; clear
+                dialog --title "Error" --msgbox "Passwords not match or left empty. Try Again!" 0 0; clear
             fi
         done
     fi
    
     if [ "$MENU" == "4" ]; then
-        INIT=$(dialog --title "Init Selection" --menu "Choose your preferred init: " 12 40 3 \
+        INIT=$(dialog --title "Init Selection" --menu "Choose your preferred init: " 10 40 3 \
             1 "systemd" \
             2 "openrc" \
             3 "runit" 3>&1 1>&2 2>&3 3>&-); clear
@@ -232,7 +232,7 @@ while true; do
     fi
    
     if [ "$MENU" == "5" ]; then
-        DE=$(dialog --title "DE Selection" --menu "Choose your preferred DE: " 12 40 2 \
+        DE=$(dialog --title "DE Selection" --menu "Choose your preferred DE: " 10 40 2 \
             1 "KDE Plasma" \
             2 "XFCE4" 3>&1 1>&2 2>&3 3>&-); clear
     fi
@@ -269,7 +269,7 @@ while true; do
     fi
 
     if [ "$MENU" == "7" ]; then
-        CHOICE=$(dialog --title "Boot Mode" --menu "How should the installer decide between UEFI and BIOS/Legacy?\n\nOnly override auto-detect if you know it's wrong for your setup (e.g. you booted the installer media in a different mode than you want to install in)." 15 70 3 \
+        CHOICE=$(dialog --title "Boot Mode" --menu "Choose your bios down below:" 11 55 3 \
             1 "Auto-detect (recommended)" \
             2 "Force UEFI" \
             3 "Force BIOS / Legacy" 3>&1 1>&2 2>&3 3>&-); clear
@@ -307,11 +307,7 @@ while true; do
             continue
         fi
 
-        # Detect firmware boot mode, honoring a manual override from the "Boot Mode" menu.
-        # EFIVARS_PRESENT reflects whether THIS live session can actually write NVRAM boot
-        # entries (efivarfs mounted with content) - that's independent from which mode we
-        # ultimately install for, which matters when someone forces UEFI from a BIOS/CSM-booted
-        # live session.
+
         EFIVARS_PRESENT=false
         if [ -d /sys/firmware/efi/efivars ] && [ -n "$(ls -A /sys/firmware/efi/efivars 2>/dev/null)" ]; then
             EFIVARS_PRESENT=true
@@ -353,15 +349,13 @@ while true; do
             fi
         fi
 
-        # UEFI_NVRAM_OK controls whether we try to register a proper firmware boot entry
-        # (needs a mounted efivarfs) versus only writing the fallback-path bootloader.
         UEFI_NVRAM_OK=false
         if [ "$BOOT_MODE" == "uefi" ] && [ "$EFIVARS_PRESENT" == "true" ]; then
             UEFI_NVRAM_OK=true
         fi
 
         if [ "$BOOT_MODE" == "uefi" ] && [ "$EFIVARS_PRESENT" != "true" ]; then
-            dialog --title "Warning: No EFI Variables" --yesno "You're installing for UEFI, but this live session doesn't have EFI variables available (it looks like it was booted in BIOS/CSM mode).\n\nGrub can still be installed (a fallback bootloader will be written to $EFI_DIR/EFI/BOOT/BOOTX64.EFI), but no dedicated 'Visnux' entry can be registered in your firmware's boot menu - most firmwares will still boot it as the fallback, but not all.\n\nFor a proper boot entry, reboot the install media in UEFI mode instead.\n\nContinue anyway?" 0 0
+            dialog --title "Warning: No EFI Variables" --yesno "You're installing for UEFI, but this live session doesn't have EFI variables available.\n\nGrub can still be installed, but no dedicated 'Visnux' entry can be registered in your firmware's boot menu - most firmwares will still boot it as the fallback, but not all.\n\nFor a proper boot entry, reboot the install media in UEFI mode instead.\n\nContinue anyway?" 0 0
             if [ $? -ne 0 ]; then
                 clear
                 continue
@@ -369,7 +363,7 @@ while true; do
             clear
         fi
 
-        dialog --title "Warning!" --yesno "If you click confirm, Visnux Linux will install on your disk/partition at /mnt. THIS ACTION CANNOT BE REVERSED!\n\nDo you wish to continue?" 0 0
+        dialog --title "Warning!" --yesno "If you click confirm, Visnux Linux will install on your disk/partition at /mnt. THIS ACTION CANNOT BE REVERSED!\n\nSO do it at your own risk!!" 0 0
         
         STATUS=$?
         clear
@@ -382,9 +376,6 @@ while true; do
                 TIMEZONE="UTC"
             fi
 
-            # Figure out the real disk backing /mnt (root partition's parent device),
-            # instead of assuming /dev/sda. Handles nvme0n1p3, sda1, vda1, mmcblk0p1, etc.
-            # Only actually needed for BIOS installs, but we compute it either way.
             ROOT_PART=$(findmnt -no SOURCE /mnt 2>/dev/null)
             GRUB_DISK=""
             if [ -n "$ROOT_PART" ]; then
@@ -471,11 +462,6 @@ if [ "$BOOT_MODE" = "uefi" ]; then
         fi
     fi
 
-    # Also drop a copy at the default fallback path (EFI/BOOT/BOOTX64.EFI). Firmware
-    # NVRAM entries are frequently wiped by Windows updates or BIOS resets on dual-boot
-    # machines, and most firmware falls back to this path when no NVRAM entry matches -
-    # this keeps the system bootable even after that happens, without touching Windows'
-    # own bootmgfw.efi (which lives at EFI/Microsoft/Boot/, a different path).
     mkdir -p "$EFI_DIR/EFI/BOOT"
     if [ -f "$EFI_DIR/EFI/Visnux/grubx64.efi" ]; then
         cp -f "$EFI_DIR/EFI/Visnux/grubx64.efi" "$EFI_DIR/EFI/BOOT/BOOTX64.EFI" || true
@@ -871,7 +857,7 @@ SVCEOF
             fi
 
             if [ "$INIT_OK" == "true" ]; then
-                dialog --title "All done!" --msgbox "Installation complete! Reboot into Visnux Linux to launch SDDM." 0 0; clear
+                dialog --title "All done!" --msgbox "Installation complete! Reboot into Visnux Linux and Larp Better." 0 0; clear
                 break
             else
                 show_error_log
