@@ -454,6 +454,14 @@ fi
 mkdir -p /etc/skel/.config/fastfetch
 
 
+if git clone https://github.com/beamyyl/kitty /tmp/kitty-skel; then
+    cp -r /tmp/kitty-skel/* /etc/skel/.config/ 2>/dev/null || true
+    rm -rf /tmp/kitty-skel
+else
+    echo "WARNING: could not clone beamyyl/kitty, /etc/skel/.config/kitty not seeded" >&2
+fi
+
+
 if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
     [ -f /tmp/visnux-assets/visnux.svg ] && cp /tmp/visnux-assets/visnux.svg /usr/share/icons/hicolor/scalable/apps/visnux.svg
     [ -f /tmp/visnux-assets/visnux.png ] && cp /tmp/visnux-assets/visnux.png /usr/share/pixmaps/visnux.png
@@ -624,6 +632,13 @@ else
 fi
 mkdir -p /etc/skel/.config/fastfetch
 
+
+if git clone https://github.com/beamyyl/kitty /tmp/kitty-skel; then
+    cp -r /tmp/kitty-skel/* /etc/skel/.config/ 2>/dev/null || true
+    rm -rf /tmp/kitty-skel
+else
+    echo "WARNING: could not clone beamyyl/kitty, /etc/skel/.config/kitty not seeded" >&2
+fi
 
 if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
     [ -f /tmp/visnux-assets/visnux.svg ] && cp /tmp/visnux-assets/visnux.svg /usr/share/icons/hicolor/scalable/apps/visnux.svg
@@ -834,6 +849,14 @@ else
     echo "WARNING: could not clone beamyyl/fastfetch, /etc/skel/.config/fastfetch not seeded" >&2
 fi
 mkdir -p /etc/skel/.config/fastfetch
+
+
+if git clone https://github.com/beamyyl/kitty /tmp/kitty-skel; then
+    cp -r /tmp/kitty-skel/* /etc/skel/.config/ 2>/dev/null || true
+    rm -rf /tmp/kitty-skel
+else
+    echo "WARNING: could not clone beamyyl/kitty, /etc/skel/.config/kitty not seeded" >&2
+fi
 
 
 if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
