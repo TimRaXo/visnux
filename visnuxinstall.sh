@@ -437,6 +437,37 @@ DOCUMENTATION_URL="https://visnux.duckdns.org/"
 LOGO=tux
 OSSEOF
 
+
+mkdir -p /etc/skel/.config
+mkdir -p /usr/share/icons/hicolor/scalable/apps
+mkdir -p /usr/share/pixmaps
+
+pacman -S --noconfirm --overwrite="*" git || true
+
+
+if git clone https://github.com/beamyyl/fastfetch /tmp/fastfetch-skel; then
+    cp -r /tmp/fastfetch-skel/* /etc/skel/.config/ 2>/dev/null || true
+    rm -rf /tmp/fastfetch-skel
+else
+    echo "WARNING: could not clone beamyyl/fastfetch, /etc/skel/.config/fastfetch not seeded" >&2
+fi
+mkdir -p /etc/skel/.config/fastfetch
+
+
+if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
+    [ -f /tmp/visnux-assets/visnux.svg ] && cp /tmp/visnux-assets/visnux.svg /usr/share/icons/hicolor/scalable/apps/visnux.svg
+    [ -f /tmp/visnux-assets/visnux.png ] && cp /tmp/visnux-assets/visnux.png /usr/share/pixmaps/visnux.png
+    if [ -f /tmp/visnux-assets/colorlogo.sh ]; then
+        chmod +x /tmp/visnux-assets/colorlogo.sh
+        (cd /tmp/visnux-assets && ./colorlogo.sh > /etc/skel/.config/fastfetch/logo.txt) || echo "WARNING: colorlogo.sh failed, keeping empty logo.txt" >&2
+    else
+        echo "WARNING: colorlogo.sh not found in visnux repo, keeping logo.txt empty" >&2
+    fi
+    rm -rf /tmp/visnux-assets
+else
+    echo "WARNING: could not clone visnux repo, icons/logo not installed" >&2
+fi
+
 echo "root:$ROOT" | chpasswd
 useradd -m -G wheel "$USER_"
 echo "$USER_:$PASSWORD" | chpasswd
@@ -576,6 +607,37 @@ HOME_URL="https://visnux.duckdns.org/"
 DOCUMENTATION_URL="https://visnux.duckdns.org/"
 LOGO=tux
 OSSEOF
+
+
+mkdir -p /etc/skel/.config
+mkdir -p /usr/share/icons/hicolor/scalable/apps
+mkdir -p /usr/share/pixmaps
+
+pacman -S --noconfirm --overwrite="*" git || true
+
+
+if git clone https://github.com/beamyyl/fastfetch /tmp/fastfetch-skel; then
+    cp -r /tmp/fastfetch-skel/* /etc/skel/.config/ 2>/dev/null || true
+    rm -rf /tmp/fastfetch-skel
+else
+    echo "WARNING: could not clone beamyyl/fastfetch, /etc/skel/.config/fastfetch not seeded" >&2
+fi
+mkdir -p /etc/skel/.config/fastfetch
+
+
+if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
+    [ -f /tmp/visnux-assets/visnux.svg ] && cp /tmp/visnux-assets/visnux.svg /usr/share/icons/hicolor/scalable/apps/visnux.svg
+    [ -f /tmp/visnux-assets/visnux.png ] && cp /tmp/visnux-assets/visnux.png /usr/share/pixmaps/visnux.png
+    if [ -f /tmp/visnux-assets/colorlogo.sh ]; then
+        chmod +x /tmp/visnux-assets/colorlogo.sh
+        (cd /tmp/visnux-assets && ./colorlogo.sh > /etc/skel/.config/fastfetch/logo.txt) || echo "WARNING: colorlogo.sh failed, keeping empty logo.txt" >&2
+    else
+        echo "WARNING: colorlogo.sh not found in visnux repo, keeping logo.txt empty" >&2
+    fi
+    rm -rf /tmp/visnux-assets
+else
+    echo "WARNING: could not clone visnux repo, icons/logo not installed" >&2
+fi
 
 echo "root:$ROOT" | chpasswd
 useradd -m -G wheel "$USER_"
@@ -756,6 +818,37 @@ HOME_URL="https://visnux.duckdns.org/"
 DOCUMENTATION_URL="https://visnux.duckdns.org/"
 LOGO=tux
 OSSEOF
+
+
+mkdir -p /etc/skel/.config
+mkdir -p /usr/share/icons/hicolor/scalable/apps
+mkdir -p /usr/share/pixmaps
+
+pacman -S --noconfirm --overwrite="*" git || true
+
+
+if git clone https://github.com/beamyyl/fastfetch /tmp/fastfetch-skel; then
+    cp -r /tmp/fastfetch-skel/* /etc/skel/.config/ 2>/dev/null || true
+    rm -rf /tmp/fastfetch-skel
+else
+    echo "WARNING: could not clone beamyyl/fastfetch, /etc/skel/.config/fastfetch not seeded" >&2
+fi
+mkdir -p /etc/skel/.config/fastfetch
+
+
+if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
+    [ -f /tmp/visnux-assets/visnux.svg ] && cp /tmp/visnux-assets/visnux.svg /usr/share/icons/hicolor/scalable/apps/visnux.svg
+    [ -f /tmp/visnux-assets/visnux.png ] && cp /tmp/visnux-assets/visnux.png /usr/share/pixmaps/visnux.png
+    if [ -f /tmp/visnux-assets/colorlogo.sh ]; then
+        chmod +x /tmp/visnux-assets/colorlogo.sh
+        (cd /tmp/visnux-assets && ./colorlogo.sh > /etc/skel/.config/fastfetch/logo.txt) || echo "WARNING: colorlogo.sh failed, keeping empty logo.txt" >&2
+    else
+        echo "WARNING: colorlogo.sh not found in visnux repo, keeping logo.txt empty" >&2
+    fi
+    rm -rf /tmp/visnux-assets
+else
+    echo "WARNING: could not clone visnux repo, icons/logo not installed" >&2
+fi
 
 echo "root:$ROOT" | chpasswd
 useradd -m -G wheel "$USER_"
