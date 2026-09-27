@@ -389,6 +389,7 @@ while true; do
             INIT_OK=true
             fix_keyrings_and_time
 
+#systemd
             if [ "$INIT" == "1" ]; then
                 sed -i 's/^#*ParallelDownloads = .*/ParallelDownloads = 12/' /etc/pacman.conf
                 
@@ -530,6 +531,7 @@ EOF
                 fi
             fi
 
+#openrc
             if [ "$INIT" == "2" ]; then
                 ARTIX_CONF="/tmp/visnux-artix.conf"
                 cat > "$ARTIX_CONF" <<EOF
@@ -740,6 +742,7 @@ SVCEOF
                 rm -f "$ARTIX_CONF"
             fi
 
+#runit
             if [ "$INIT" == "3" ]; then
                 ARTIX_CONF="/tmp/visnux-artix.conf"
                 cat > "$ARTIX_CONF" <<EOF
