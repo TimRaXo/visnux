@@ -389,7 +389,6 @@ while true; do
             INIT_OK=true
             fix_keyrings_and_time
 
-#systemd
             if [ "$INIT" == "1" ]; then
                 sed -i 's/^#*ParallelDownloads = .*/ParallelDownloads = 12/' /etc/pacman.conf
                 
@@ -432,18 +431,16 @@ PRETTY_NAME="Visnux Linux"
 ID=visnux
 BUILD_ID=rolling
 ANSI_COLOR="38;2;85;255;85"
-HOME_URL="https://visnux.duckdns.org/"
-DOCUMENTATION_URL="https://visnux.duckdns.org/"
-LOGO=tux
+HOME_URL="https://github.com/realv1sta/visnux"
+DOCUMENTATION_URL="https://github.com/realv1sta/visnux"
+LOGO=visnux
 OSSEOF
-
 
 mkdir -p /etc/skel/.config
 mkdir -p /usr/share/icons/hicolor/scalable/apps
 mkdir -p /usr/share/pixmaps
 
 pacman -S --noconfirm --overwrite="*" git || true
-
 
 if git clone https://github.com/beamyyl/fastfetch /tmp/fastfetch-skel; then
     cp -r /tmp/fastfetch-skel/* /etc/skel/.config/ 2>/dev/null || true
@@ -453,14 +450,12 @@ else
 fi
 mkdir -p /etc/skel/.config/fastfetch
 
-
 if git clone https://github.com/beamyyl/kitty /tmp/kitty-skel; then
     cp -r /tmp/kitty-skel/* /etc/skel/.config/ 2>/dev/null || true
     rm -rf /tmp/kitty-skel
 else
     echo "WARNING: could not clone beamyyl/kitty, /etc/skel/.config/kitty not seeded" >&2
 fi
-
 
 if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
     [ -f /tmp/visnux-assets/visnux.svg ] && cp /tmp/visnux-assets/visnux.svg /usr/share/icons/hicolor/scalable/apps/visnux.svg
@@ -535,7 +530,6 @@ EOF
                 fi
             fi
 
-#openrc
             if [ "$INIT" == "2" ]; then
                 ARTIX_CONF="/tmp/visnux-artix.conf"
                 cat > "$ARTIX_CONF" <<EOF
@@ -611,18 +605,16 @@ PRETTY_NAME="Visnux Linux"
 ID=visnux
 BUILD_ID=rolling
 ANSI_COLOR="38;2;85;255;85"
-HOME_URL="https://visnux.duckdns.org/"
-DOCUMENTATION_URL="https://visnux.duckdns.org/"
-LOGO=tux
+HOME_URL="https://github.com/realv1sta/visnux"
+DOCUMENTATION_URL="https://github.com/realv1sta/visnux"
+LOGO=visnux
 OSSEOF
-
 
 mkdir -p /etc/skel/.config
 mkdir -p /usr/share/icons/hicolor/scalable/apps
 mkdir -p /usr/share/pixmaps
 
 pacman -S --noconfirm --overwrite="*" git || true
-
 
 if git clone https://github.com/beamyyl/fastfetch /tmp/fastfetch-skel; then
     cp -r /tmp/fastfetch-skel/* /etc/skel/.config/ 2>/dev/null || true
@@ -631,7 +623,6 @@ else
     echo "WARNING: could not clone beamyyl/fastfetch, /etc/skel/.config/fastfetch not seeded" >&2
 fi
 mkdir -p /etc/skel/.config/fastfetch
-
 
 if git clone https://github.com/beamyyl/kitty /tmp/kitty-skel; then
     cp -r /tmp/kitty-skel/* /etc/skel/.config/ 2>/dev/null || true
@@ -749,7 +740,6 @@ SVCEOF
                 rm -f "$ARTIX_CONF"
             fi
 
-#runit
             if [ "$INIT" == "3" ]; then
                 ARTIX_CONF="/tmp/visnux-artix.conf"
                 cat > "$ARTIX_CONF" <<EOF
@@ -829,18 +819,16 @@ PRETTY_NAME="Visnux Linux"
 ID=visnux
 BUILD_ID=rolling
 ANSI_COLOR="38;2;85;255;85"
-HOME_URL="https://visnux.duckdns.org/"
-DOCUMENTATION_URL="https://visnux.duckdns.org/"
-LOGO=tux
+HOME_URL="https://github.com/realv1sta/visnux"
+DOCUMENTATION_URL="https://github.com/realv1sta/visnux"
+LOGO=visnux
 OSSEOF
-
 
 mkdir -p /etc/skel/.config
 mkdir -p /usr/share/icons/hicolor/scalable/apps
 mkdir -p /usr/share/pixmaps
 
 pacman -S --noconfirm --overwrite="*" git || true
-
 
 if git clone https://github.com/beamyyl/fastfetch /tmp/fastfetch-skel; then
     cp -r /tmp/fastfetch-skel/* /etc/skel/.config/ 2>/dev/null || true
@@ -850,14 +838,12 @@ else
 fi
 mkdir -p /etc/skel/.config/fastfetch
 
-
 if git clone https://github.com/beamyyl/kitty /tmp/kitty-skel; then
     cp -r /tmp/kitty-skel/* /etc/skel/.config/ 2>/dev/null || true
     rm -rf /tmp/kitty-skel
 else
     echo "WARNING: could not clone beamyyl/kitty, /etc/skel/.config/kitty not seeded" >&2
 fi
-
 
 if git clone https://github.com/realv1sta/visnux.git /tmp/visnux-assets; then
     [ -f /tmp/visnux-assets/visnux.svg ] && cp /tmp/visnux-assets/visnux.svg /usr/share/icons/hicolor/scalable/apps/visnux.svg
